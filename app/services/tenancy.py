@@ -1,6 +1,6 @@
-"""The one place that decides "may this user touch this organization or project?".
+"""The one place that decides "may this user touch this organization, project or event?".
 
-Every route that takes an organization or project id goes through these functions,
+Every route that takes an organization, project or event id goes through these functions,
 so tenant isolation cannot be forgotten on an individual endpoint.
 
 Rule: if you are not a member, the resource looks like it does not exist (404).
@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import Forbidden, NotFound
-from app.models import Organization, OrganizationMember, Project
+from app.models import Event, Organization, OrganizationMember, Project
 from app.models.enums import Role
 
 
@@ -26,6 +26,13 @@ class OrgContext:
 
 @dataclass(frozen=True)
 class ProjectContext:
+    project: Project
+    membership: OrganizationMember
+
+
+@dataclass(frozen=True)
+class EventContext:
+    event: Event
     project: Project
     membership: OrganizationMember
 
@@ -51,6 +58,18 @@ def get_project_context(db: Session, project_id: uuid.UUID, user_id: uuid.UUID) 
     if row is None:
         raise NotFound("project_not_found", "Project not found")
     return ProjectContext(project=row[0], membership=row[1])
+
+
+def get_event_context(db: Session, event_id: uuid.UUID, user_id: uuid.UUID) -> EventContext:
+    row = db.execute(
+        select(Event, Project, OrganizationMember)
+        .join(Project, Project.id == Event.project_id)
+        .join(OrganizationMember, OrganizationMember.organization_id == Project.organization_id)
+        .where(Event.id == event_id, OrganizationMember.user_id == user_id)
+    ).first()
+    if row is None:
+        raise NotFound("event_not_found", "Event not found")
+    return EventContext(event=row[0], project=row[1], membership=row[2])
 
 
 def require_owner(membership: OrganizationMember) -> None:
