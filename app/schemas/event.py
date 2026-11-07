@@ -37,6 +37,7 @@ class EventAccepted(BaseModel):
     status: Literal["accepted"] = "accepted"
     idempotency_key: str | None
     duplicate: bool  # true when this was a repeat of an event we already accepted
+    deliveries: int  # how many endpoints this event is queued for
     created_at: datetime
 
 
