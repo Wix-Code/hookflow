@@ -14,7 +14,7 @@ from app.services import api_keys as api_key_service
 from app.services import auth as auth_service
 from app.services import tenancy
 from app.services.api_keys import ApiKeyContext
-from app.services.tenancy import EventContext, OrgContext, ProjectContext
+from app.services.tenancy import DeliveryContext, EndpointContext, EventContext, OrgContext, ProjectContext
 
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
@@ -58,6 +58,16 @@ def get_event_context(event_id: uuid.UUID, user: CurrentUser, db: DbSession) -> 
     return tenancy.get_event_context(db, event_id, user.id)
 
 
+def get_endpoint_context(endpoint_id: uuid.UUID, user: CurrentUser, db: DbSession) -> EndpointContext:
+    """Any member of the organization that owns the endpoint's project. Everyone else gets 404."""
+    return tenancy.get_endpoint_context(db, endpoint_id, user.id)
+
+
+def get_delivery_context(delivery_id: uuid.UUID, user: CurrentUser, db: DbSession) -> DeliveryContext:
+    """Any member of the organization that owns the delivery's project. Everyone else gets 404."""
+    return tenancy.get_delivery_context(db, delivery_id, user.id)
+
+
 def get_api_key_context(
     project_id: uuid.UUID,
     api_key: Annotated[str | None, Depends(api_key_scheme)],
@@ -84,5 +94,7 @@ OrgMemberCtx = Annotated[OrgContext, Depends(get_org_context)]
 OrgOwnerCtx = Annotated[OrgContext, Depends(get_org_owner_context)]
 ProjectCtx = Annotated[ProjectContext, Depends(get_project_context)]
 EventCtx = Annotated[EventContext, Depends(get_event_context)]
+EndpointCtx = Annotated[EndpointContext, Depends(get_endpoint_context)]
+DeliveryCtx = Annotated[DeliveryContext, Depends(get_delivery_context)]
 ApiKeyCtx = Annotated[ApiKeyContext, Depends(get_api_key_context)]
 PageParams = Annotated[Pagination, Depends(get_pagination)]

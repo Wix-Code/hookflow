@@ -43,7 +43,7 @@ def publish_event(
     db: DbSession,
     response: Response,
 ):
-    event, duplicate = event_service.publish_event(db, key_ctx.project, incoming)
+    event, duplicate, delivery_count = event_service.publish_event(db, key_ctx.project, incoming)
     if duplicate:
         response.status_code = 200
     return ApiResponse(
@@ -53,6 +53,7 @@ def publish_event(
             event_type=event.event_type,
             idempotency_key=event.idempotency_key,
             duplicate=duplicate,
+            deliveries=delivery_count,
             created_at=event.created_at,
         ),
     )
