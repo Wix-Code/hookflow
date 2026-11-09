@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     # LOCAL DEVELOPMENT ONLY. Lets webhook URLs use http://, localhost and IP addresses so you can test against a
     # mock receiver on your own computer. Never turn this on in a deployed environment.
     allow_unsafe_webhook_urls: bool = False
+    
+    # The delivery worker (python -m app.worker).
+    worker_poll_interval_seconds: float = 2.0  # how long to sleep when nothing is due
+    worker_concurrency: int = 4  # deliveries sent at the same time by one worker process
+    delivery_timeout_seconds: float = 10.0  # each network step (connect, send, wait for the reply)
+    delivery_lease_seconds: int = 60  # how long a worker may hold a delivery before others may take it over
 
     @field_validator("encryption_key")
     @classmethod
