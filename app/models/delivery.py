@@ -29,10 +29,30 @@ class Delivery(Base):
     attempt_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default="0")
     next_retry_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     delivered_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    # A worker "leases" a delivery while it sends it. Only the holder of the current token may record the result.
+    lease_token: Mapped[uuid.UUID | None] = mapped_column(sa.Uuid, default=None)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, server_default=sa.func.now())
     updated_at: Mapped[datetime] = mapped_column(
         UTCDateTime, default=utcnow, onupdate=utcnow, server_default=sa.func.now()
     )
+
+
+class DeliveryAttempt(Base):
+    """One try at sending a delivery. Rows are only ever added, never changed or deleted."""
+
+    __tablename__ = "delivery_attempts"
+    __table_args__ = (
+        sa.UniqueConstraint("delivery_id", "attempt_number", name="uq_delivery_attempts_delivery_id_attempt_number"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(sa.Uuid, primary_key=True, default=uuid.uuid4)
+    delivery_id: Mapped[uuid.UUID] = mapped_column(sa.ForeignKey("deliveries.id", ondelete="CASCADE"))
+    attempt_number: Mapped[int] = mapped_column(sa.Integer)
+    response_status: Mapped[int | None] = mapped_column(sa.Integer, default=None)
+    duration_ms: Mapped[int | None] = mapped_column(sa.Integer, default=None)
+    error: Mapped[str | None] = mapped_column(sa.String(100), default=None)  # a short safe code, never raw text
+    attempted_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
 class OutboxMessage(Base):

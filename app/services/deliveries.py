@@ -4,9 +4,9 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Delivery, Event, WebhookEndpoint
+from app.models import Delivery, DeliveryAttempt, Event, WebhookEndpoint
 from app.models.enums import DeliveryStatus
-from app.services.tenancy import ProjectContext
+from app.services.tenancy import DeliveryContext, ProjectContext
 
 
 def list_deliveries(
@@ -55,3 +55,12 @@ def list_deliveries(
         .offset(offset)
     ).all()
     return [(delivery, event_type_, endpoint_name) for delivery, event_type_, endpoint_name in rows], total
+
+
+def list_attempts(db: Session, ctx: DeliveryContext, *, limit: int, offset: int) -> tuple[list[DeliveryAttempt], int]:
+    condition = DeliveryAttempt.delivery_id == ctx.delivery.id
+    total = db.scalar(select(func.count()).select_from(DeliveryAttempt).where(condition))
+    attempts = db.scalars(
+        select(DeliveryAttempt).where(condition).order_by(DeliveryAttempt.attempt_number).limit(limit).offset(offset)
+    ).all()
+    return list(attempts), total

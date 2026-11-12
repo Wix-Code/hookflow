@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models import Delivery
 
@@ -34,3 +34,15 @@ class DeliveryResponse(BaseModel):
             created_at=delivery.created_at,
             updated_at=delivery.updated_at,
         )
+
+
+class AttemptResponse(BaseModel):
+    """One try at sending. error is a short code such as "timeout" or "http_500", never raw text."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    attempt_number: int
+    response_status: int | None
+    duration_ms: int | None
+    error: str | None
+    attempted_at: datetime

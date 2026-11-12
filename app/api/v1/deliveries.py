@@ -6,7 +6,7 @@ from pydantic import AwareDatetime
 
 from app.api.deps import DbSession, DeliveryCtx, PageParams, ProjectCtx
 from app.models.enums import DeliveryStatus
-from app.schemas.delivery import DeliveryResponse
+from app.schemas.delivery import AttemptResponse, DeliveryResponse
 from app.schemas.response import ApiResponse, ErrorResponse, Page
 from app.services import deliveries as delivery_service
 
@@ -60,4 +60,22 @@ def get_delivery(delivery_id: uuid.UUID, ctx: DeliveryCtx):
     return ApiResponse(
         message="Delivery",
         data=DeliveryResponse.from_parts(ctx.delivery, ctx.event_type, ctx.endpoint.name),
+    )
+
+
+@router.get(
+    "/deliveries/{delivery_id}/attempts",
+    response_model=ApiResponse[Page[AttemptResponse]],
+    responses=_NOT_FOUND,
+)
+def list_attempts(delivery_id: uuid.UUID, ctx: DeliveryCtx, page: PageParams, db: DbSession):
+    attempts, total = delivery_service.list_attempts(db, ctx, limit=page.limit, offset=page.offset)
+    return ApiResponse(
+        message="Attempts",
+        data=Page(
+            items=[AttemptResponse.model_validate(a) for a in attempts],
+            total=total,
+            limit=page.limit,
+            offset=page.offset,
+        ),
     )

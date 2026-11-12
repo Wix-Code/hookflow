@@ -1,5 +1,5 @@
 from app.models.api_key import ApiKey
-from app.models.delivery import Delivery, OutboxMessage
+from app.models.delivery import Delivery, DeliveryAttempt, OutboxMessage
 from app.models.event import Event
 from app.models.organization import Organization, OrganizationMember
 from app.models.project import Project
@@ -10,6 +10,7 @@ from app.models.webhook_endpoint import EndpointSubscription, WebhookEndpoint
 __all__ = [
     "ApiKey",
     "Delivery",
+    "DeliveryAttempt",
     "EndpointSubscription",
     "Event",
     "Organization",
